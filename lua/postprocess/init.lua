@@ -169,7 +169,7 @@ end)
 
 
 list.Set( "PostProcess", "Anaglyph 3D", {
-	icon		= "materials/gui/Blues_Brothers.jpg",
+	icon		= "materials/gui/anaglyph_3d.png",
 	convar = "pp_anaglyph_3d",
 	category = "GuuscoNL's Post Process",
 
