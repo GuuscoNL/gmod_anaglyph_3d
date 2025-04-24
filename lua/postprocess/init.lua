@@ -1,5 +1,11 @@
 -- Toggle convar
 local pp_anaglyph_3d = CreateClientConVar("pp_anaglyph_3d", "0", false, false)
+local pp_anaglyph_3d_eye_separation = CreateClientConVar("pp_anaglyph_3d_eye_separation", "63", true, false, "millimeters (63 is average for adults and in the range of 50-75)", 0, 100)
+local pp_anaglyph_3d_no_draw_viewmodel = CreateClientConVar("pp_anaglyph_3d_no_draw_viewmodel", "0", true, false)
+-- local pp_anaglyph_3d_draw_hud = CreateClientConVar("pp_anaglyph_3d_draw_hud", "1", true, false)
+local pp_anaglyph_3d_draw_monitors = CreateClientConVar("pp_anaglyph_3d_draw_monitors", "1", true, false)
+local pp_anaglyph_3d_use_postprocess = CreateClientConVar("pp_anaglyph_3d_use_postprocess", "1", true, false)
+local pp_anaglyph_3d_fov = CreateClientConVar("pp_anaglyph_3d_fov", "0", true, false, "FOV for the anaglyph 3D effect. 0 = default FOV", 0, 150)
 
 -- Create RTs & materials
 local leftRT  = GetRenderTarget(
@@ -47,8 +53,6 @@ local matRight = CreateMaterial("AnaglyphRightBlue", "UnlitGeneric", {
 --     ["$color"]           = "[0 1 1]" -- Only store green and blue (cyan) and because we are blending two textures it gets too bright, so we need to scale it down a bit
 -- })
 
-local eyeSeparationmm = 63 -- millimeters (63 is average for adults and in the range of 50-75)
-local eyeSeparation = eyeSeparationmm / 19.03
 
 local eyeSeparationVMmm = 15 -- millimeters (63 is average for adults and in the range of 50-75)
 local eyeSeparationVM = eyeSeparationVMmm / 19.03
@@ -91,15 +95,23 @@ local eyeSeparationVM = eyeSeparationVMmm / 19.03
 
 hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
     if not pp_anaglyph_3d:GetBool() then return end
+
+
+    local eyeSeparation = pp_anaglyph_3d_eye_separation:GetFloat() / 19.03
     
 
     -- Prepare view data
     local view = { x=0, y=0, w=ScrW(), h=ScrH(), fov=fov, angles=angles }
-	view.drawmonitors = true 
-    view.drawhud = true 
-    view.dopostprocess = true
-    view.drawviewmodel = true
-    view.viewmodelfov = fov
+	view.drawmonitors = pp_anaglyph_3d_draw_monitors:GetBool()
+    view.drawhud = true--pp_anaglyph_3d_draw_hud:GetBool()
+    view.dopostprocess = pp_anaglyph_3d_use_postprocess:GetBool()
+    view.drawviewmodel = not pp_anaglyph_3d_no_draw_viewmodel:GetBool()
+
+    if pp_anaglyph_3d_fov:GetFloat() > 0 then
+        view.viewmodelfov = pp_anaglyph_3d_fov:GetFloat()
+    else
+        view.viewmodelfov = fov
+    end
     
 	-- render.Clear(255, 255, 0, 255) -- Clear the screen to black
 
@@ -152,7 +164,7 @@ hook.Add("HUDPaint", "Anaglyph3D_Composite", function()
     -- surface.DrawTexturedRect(0,0,ScrW(),ScrH())
     render.OverrideBlend(false)
 
-    
+    return false
 end)
 
 
@@ -160,6 +172,35 @@ list.Set( "PostProcess", "Anaglyph 3D", {
 	icon		= "materials/gui/Blues_Brothers.jpg",
 	convar = "pp_anaglyph_3d",
 	category = "GuuscoNL's Post Process",
+
+    cpanel = function(cPanel)
+        local form = vgui.Create("DForm", cPanel)
+        form:SetName("Anaglyph 3D")
+        cPanel:AddItem(form)
+
+        form:Help("Experience Garry's Mod in advanced 3D technology from the 80s!")
+
+        form:CheckBox("Enable Anaglyph 3D", "pp_anaglyph_3d")
+        form:ControlHelp("This will render the world in anaglyph 3D. Use red/cyan glasses to see the effect.")
+
+        form:NumSlider("Eye Separation (mm)", "pp_anaglyph_3d_eye_separation", 0, 100, 0)
+        form:ControlHelp("This sets the eye separation in millimeters. Adults typically range from 50-75mm, with 63mm being average.")
+
+        form:CheckBox("No Viewmodel", "pp_anaglyph_3d_no_draw_viewmodel")
+        form:ControlHelp("This will draw the viewmodel in anaglyph 3D.")
+
+        -- form:CheckBox("Draw HUD", "pp_anaglyph_3d_draw_hud")
+        -- form:ControlHelp("This will draw the HUD in anaglyph 3D.")
+
+        form:CheckBox("Draw Monitors", "pp_anaglyph_3d_draw_monitors")
+        form:ControlHelp("This will draw monitors such as cameras and TVs while in anaglyph 3D.")
+
+        form:CheckBox("Use Post Process", "pp_anaglyph_3d_use_postprocess")
+        form:ControlHelp("This will use post-process effects to draw the anaglyph 3D effect.")
+
+        form:NumSlider("Viewmodel FOV", "pp_anaglyph_3d_fov", 0, 150, 0)
+        form:ControlHelp("Change the viewmodel FOV for the anaglyph 3D effect. Use 0 for default. A higher FOV moves the viewmodel farther from the camera, enhancing the 3D effect. If the viewmodel is too close, the red and cyan images may be too far apart for your eyes to merge comfortably.")
+    end
 })
 
 print("GUUSCONL POST PROCESS UPADTED")
