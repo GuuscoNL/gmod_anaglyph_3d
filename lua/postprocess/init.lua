@@ -6,6 +6,7 @@ local pp_anaglyph_3d_no_draw_viewmodel = CreateClientConVar("pp_anaglyph_3d_no_d
 local pp_anaglyph_3d_draw_monitors = CreateClientConVar("pp_anaglyph_3d_draw_monitors", "1", true, false)
 local pp_anaglyph_3d_use_postprocess = CreateClientConVar("pp_anaglyph_3d_use_postprocess", "1", true, false)
 local pp_anaglyph_3d_fov = CreateClientConVar("pp_anaglyph_3d_fov", "0", true, false, "FOV for the anaglyph 3D effect. 0 = default FOV", 0, 150)
+local pp_anaglyph_3d_crosshair = CreateClientConVar("pp_anaglyph_3d_crosshair", "0", true, false)
 
 -- Create RTs & materials
 local leftRT  = GetRenderTarget(
@@ -101,7 +102,7 @@ hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
     
 
     -- Prepare view data
-    local view = { x=0, y=0, w=ScrW(), h=ScrH(), fov=fov, angles=angles }
+    local view = { x=0, y=0, w=ScrW(), h=ScrH(), fov=fov}
 	view.drawmonitors = pp_anaglyph_3d_draw_monitors:GetBool()
     view.drawhud = true--pp_anaglyph_3d_draw_hud:GetBool()
     view.dopostprocess = pp_anaglyph_3d_use_postprocess:GetBool()
@@ -117,6 +118,9 @@ hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
 
     -- Left eye (red)
     view.origin = origin - angles:Right() * (eyeSeparation * 0.5)
+    
+    -- angle turn 1 degree to the left
+    view.angles = Angle(angles.p, angles.y - 1, angles.r)
     render.PushRenderTarget(leftRT)
     -- render.Clear(0, 0, 0, 255)
 
@@ -126,6 +130,8 @@ hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
     -- Right eye (blue)
 
     view.origin = origin + angles:Right() * (eyeSeparation * 0.5)
+    -- angle turn 1 degree to the right
+    view.angles = Angle(angles.p, angles.y + 1, angles.r)
     render.PushRenderTarget(rightRT)
     -- render.Clear(0, 0, 0, 255)
     render.RenderView(view)
@@ -167,6 +173,12 @@ hook.Add("HUDPaint", "Anaglyph3D_Composite", function()
     return false
 end)
 
+hook.Add("HUDShouldDraw", "HideCrosshair", function(name)
+    if not pp_anaglyph_3d:GetBool() then return end
+    if               name == "CHudCrosshair" then
+        return pp_anaglyph_3d_crosshair:GetBool()
+    end
+end)
 
 list.Set( "PostProcess", "Anaglyph 3D", {
 	icon		= "materials/gui/anaglyph_3d.png",
@@ -184,7 +196,7 @@ list.Set( "PostProcess", "Anaglyph 3D", {
         form:ControlHelp("This will render the world in anaglyph 3D. Use red/cyan glasses to see the effect.")
 
         form:NumSlider("Eye Separation (mm)", "pp_anaglyph_3d_eye_separation", 0, 100, 0)
-        form:ControlHelp("This sets the eye separation in millimeters. Adults typically range from 50-75mm, with 63mm being average.")
+        form:ControlHelp("This sets the eye separation in millimeters. Adults typically range from 50-75mm, with 63mm being average. AKA intensity of the 3D effect. Try lowering it if the effect is too strong. Differs per person.")
 
         form:CheckBox("No Viewmodel", "pp_anaglyph_3d_no_draw_viewmodel")
         form:ControlHelp("This will draw the viewmodel in anaglyph 3D.")
@@ -197,6 +209,9 @@ list.Set( "PostProcess", "Anaglyph 3D", {
 
         form:CheckBox("Use Post Process", "pp_anaglyph_3d_use_postprocess")
         form:ControlHelp("This will use post-process effects to draw the anaglyph 3D effect.")
+
+        form:CheckBox("Crosshair", "pp_anaglyph_3d_crosshair")
+        form:ControlHelp("This will draw the crosshair in anaglyph 3D mode.")
 
         form:NumSlider("Viewmodel FOV", "pp_anaglyph_3d_fov", 0, 150, 0)
         form:ControlHelp("Change the viewmodel FOV for the anaglyph 3D effect. Use 0 for default. A higher FOV moves the viewmodel farther from the camera, enhancing the 3D effect. If the viewmodel is too close, the red and cyan images may be too far apart for your eyes to merge comfortably.")
