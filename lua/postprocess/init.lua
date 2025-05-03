@@ -1,12 +1,14 @@
 -- Toggle convar
 local pp_anaglyph_3d = CreateClientConVar("pp_anaglyph_3d", "0", false, false)
 local pp_anaglyph_3d_eye_separation = CreateClientConVar("pp_anaglyph_3d_eye_separation", "63", true, false, "millimeters (63 is average for adults and in the range of 50-75)", 0, 100)
-local pp_anaglyph_3d_no_draw_viewmodel = CreateClientConVar("pp_anaglyph_3d_no_draw_viewmodel", "0", true, false)
+local pp_anaglyph_3d_no_draw_viewmodel = CreateClientConVar("pp_anaglyph_3d_no_draw_viewmodel", "1", true, false)
 -- local pp_anaglyph_3d_draw_hud = CreateClientConVar("pp_anaglyph_3d_draw_hud", "1", true, false)
 local pp_anaglyph_3d_draw_monitors = CreateClientConVar("pp_anaglyph_3d_draw_monitors", "1", true, false)
 local pp_anaglyph_3d_use_postprocess = CreateClientConVar("pp_anaglyph_3d_use_postprocess", "1", true, false)
 local pp_anaglyph_3d_fov = CreateClientConVar("pp_anaglyph_3d_fov", "0", true, false, "FOV for the anaglyph 3D effect. 0 = default FOV", 0, 150)
 local pp_anaglyph_3d_crosshair = CreateClientConVar("pp_anaglyph_3d_crosshair", "0", true, false)
+local pp_anaglyph_3d_crosseyedness = CreateClientConVar("pp_anaglyph_3d_crosseyedness", "0.6", true, false, "Crosseyedness in degrees (0.5 is 5 degree)", 0, 5)
+
 
 -- Create RTs & materials
 local leftRT  = GetRenderTarget(
@@ -17,82 +19,24 @@ local rightRT = GetRenderTarget(
 	"AnaglyphRightRT",  
 	ScrW(), ScrH())
 
--- local leftVMRT  = GetRenderTarget(
---     "AnaglyphLeftVMT",  
---     ScrW(), ScrH())
-
--- local rightVMRT = GetRenderTarget(
---     "AnaglyphRightVMT",  
---     ScrW(), ScrH())
 
 local matLeft = CreateMaterial("AnaglyphLeftRed", "UnlitGeneric", {
     ["$basetexture"]     = leftRT:GetName(),
     ["$translucent"]     = "1",
-    ["$color"]           = "[.75 0 0]" -- Only store red and because we are blending two textures it gets too bright, so we need to scale it down a bit
+    ["$color"]           = "[1 0 0]" -- Only store red
 })
 
 -- Blue‑only version of right RT
 local matRight = CreateMaterial("AnaglyphRightBlue", "UnlitGeneric", {
     ["$basetexture"]     = rightRT:GetName(),
     ["$translucent"]     = "1",
-    ["$color"]           = "[0 .75 .75]" -- Only store green and blue (cyan) and because we are blending two textures it gets too bright, so we need to scale it down a bit
+    ["$color"]           = "[0 1 1]" -- Only store green and blue (cyan)
 })
 
--- local matLeftVM = CreateMaterial("AnaglyphLeftRedVM", "UnlitGeneric", {
---     ["$basetexture"]     = leftVMRT:GetName(),
---     ["$translucent"]     = "1",
---     -- ["$vertexalpha"] = "1",
---     -- ["$vertexcolor"] = "1"
---     ["$color"]           = "[1 0 0]" -- Only store red and because we are blending two textures it gets too bright, so we need to scale it down a bit
--- })
-
--- local matRightVM = CreateMaterial("AnaglyphRightBlueVM", "UnlitGeneric", {
---     ["$basetexture"]     = rightVMRT:GetName(),
---     ["$translucent"]     = "1",
---     -- ["$vertexalpha"] = "1",
---     -- ["$vertexcolor"] = "1"
---     ["$color"]           = "[0 1 1]" -- Only store green and blue (cyan) and because we are blending two textures it gets too bright, so we need to scale it down a bit
--- })
 
 
 local eyeSeparationVMmm = 15 -- millimeters (63 is average for adults and in the range of 50-75)
 local eyeSeparationVM = eyeSeparationVMmm / 19.03
-
--- #TODO: Am I going to use this? Was an idea to render the viewmodel separately, but didn't work as expected...
--- local function render3DViewModel(origin, angles)
---     vmOriginLeft = origin - angles:Right() * (eyeSeparationVM * 0.5)
---     render.PushRenderTarget(leftVMRT)
---     render.Clear(0, 0, 0, 0, true, true)
-    
-
---     cam.Start3D(vmOriginLeft, angles, 70)
---         local vm = LocalPlayer():GetViewModel()
---         if IsValid(vm) then
-    
---             vm:DrawModel()
-            
---         end
---     cam.End3D()
-    
---     render.PopRenderTarget()
-
---     vmOriginRight = origin + angles:Right() * (eyeSeparationVM * 0.5)
-
---     render.PushRenderTarget(rightVMRT)
---     render.Clear(0, 0, 0, 0, true, true)
-
---     cam.Start3D(vmOriginRight, angles, 70)
---         local vm = LocalPlayer():GetViewModel()
---         if IsValid(vm) then
-    
-    
---             vm:DrawModel()
-            
---         end
---     cam.End3D()
-
---     render.PopRenderTarget()
--- end
 
 hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
     if not pp_anaglyph_3d:GetBool() then return end
@@ -113,16 +57,13 @@ hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
     else
         view.viewmodelfov = fov
     end
-    
-	-- render.Clear(255, 255, 0, 255) -- Clear the screen to black
 
     -- Left eye (red)
     view.origin = origin - angles:Right() * (eyeSeparation * 0.5)
     
     -- angle turn 1 degree to the left
-    view.angles = Angle(angles.p, angles.y - 1, angles.r)
+    view.angles = Angle(angles.p, angles.y - pp_anaglyph_3d_crosseyedness:GetFloat(), angles.r)
     render.PushRenderTarget(leftRT)
-    -- render.Clear(0, 0, 0, 255)
 
     render.RenderView(view)
     render.PopRenderTarget()
@@ -131,20 +72,18 @@ hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
 
     view.origin = origin + angles:Right() * (eyeSeparation * 0.5)
     -- angle turn 1 degree to the right
-    view.angles = Angle(angles.p, angles.y + 1, angles.r)
+    view.angles = Angle(angles.p, angles.y + pp_anaglyph_3d_crosseyedness:GetFloat(), angles.r)
     render.PushRenderTarget(rightRT)
-    -- render.Clear(0, 0, 0, 255)
+    
     render.RenderView(view)
     render.PopRenderTarget()
 
-
-    -- render3DViewModel(origin, angles)
     
     return true  -- fully override default scene 
 end)
 
 
-hook.Add("HUDPaint", "Anaglyph3D_Composite", function()
+hook.Add("DrawOverlay", "Anaglyph3D_Composite", function()
     if not pp_anaglyph_3d:GetBool() then return end
 
     render.OverrideBlend(true, BLEND_ONE, BLEND_ONE, BLENDFUNC_ADD)
@@ -156,18 +95,6 @@ hook.Add("HUDPaint", "Anaglyph3D_Composite", function()
     
     surface.SetMaterial(matRight)
     surface.DrawTexturedRect(0,0,ScrW(),ScrH())
-
-    -- make sure the viewmodel is drawn on top of the anaglyph
-    -- and not the other way around
-    -- render.OverrideBlend(true, BLEND_ONE, BLEND_ONE, BLENDFUNC_ADD)
-    -- matLeftVM:SetVector("$color", Vector(10, 0, 0))
-    -- matRightVM:SetVector("$color", Vector(0, 10, 10))
-
-    -- surface.SetMaterial(matLeftVM)
-    -- surface.DrawTexturedRect(0,0,ScrW(),ScrH())
-    
-    -- surface.SetMaterial(matRightVM)
-    -- surface.DrawTexturedRect(0,0,ScrW(),ScrH())
     render.OverrideBlend(false)
 
     return false
@@ -196,7 +123,10 @@ list.Set( "PostProcess", "Anaglyph 3D", {
         form:ControlHelp("This will render the world in anaglyph 3D. Use red/cyan glasses to see the effect.")
 
         form:NumSlider("Eye Separation (mm)", "pp_anaglyph_3d_eye_separation", 0, 100, 0)
-        form:ControlHelp("This sets the eye separation in millimeters. Adults typically range from 50-75mm, with 63mm being average. AKA intensity of the 3D effect. Try lowering it if the effect is too strong. Differs per person.")
+        form:ControlHelp("This sets the eye separation in millimeters. Adults typically range from 50-75mm, with 63mm being average.  Try lowering it if the effect is too strong. Differs per person.")
+
+        form:NumSlider("Crosseyedness (degrees)", "pp_anaglyph_3d_crosseyedness", 0, 5, 2)
+        form:ControlHelp("This sets the crosseyedness in degrees. This is the angle at which the eyes are turned inward to focus on an object, causing distant objects to look distant. A higher value will make the effect more pronounced, but may cause discomfort. Recommended to keep it between 0 and 1.5 degrees.")
 
         form:CheckBox("No Viewmodel", "pp_anaglyph_3d_no_draw_viewmodel")
         form:ControlHelp("This will draw the viewmodel in anaglyph 3D.")
