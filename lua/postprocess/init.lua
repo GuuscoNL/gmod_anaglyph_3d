@@ -1,7 +1,7 @@
---#TODO: Dubois algorithm to help against ghosting and color accuracy issues
+--#TODO: Dubois algorithm to help against ghosting and color accuracy issues, but needs shader support...
 
 
--- Toggle convar
+
 local pp_anaglyph_3d = CreateClientConVar("pp_anaglyph_3d", "0", false, false)
 local pp_anaglyph_3d_eye_separation = CreateClientConVar("pp_anaglyph_3d_eye_separation", "63", true, false, "millimeters (63 is average for adults and in the range of 50-75)", 0, 100)
 local pp_anaglyph_3d_no_draw_viewmodel = CreateClientConVar("pp_anaglyph_3d_no_draw_viewmodel", "1", true, false)
@@ -14,7 +14,7 @@ local pp_anaglyph_3d_crosseyedness = CreateClientConVar("pp_anaglyph_3d_crosseye
 local pp_anaglyph_3d_brightness = CreateClientConVar("pp_anaglyph_3d_brightness", "1", true, false, "Brightness of the anaglyph 3D effect. 0 = blackscreen, 1 = normal brightness, 2 = double brightness", 0, 10)
 
 
--- Create RTs & materials
+-- Create RTs
 local leftRT  = GetRenderTarget(
 	"AnaglyphLeftRT",  
 	ScrW(), ScrH())
@@ -24,6 +24,7 @@ local rightRT = GetRenderTarget(
 	ScrW(), ScrH())
 
 
+-- Create materials
 local matLeft = CreateMaterial("AnaglyphLeftRed", "UnlitGeneric", {
     ["$basetexture"]     = leftRT:GetName(),
     ["$translucent"]     = "1",
@@ -38,9 +39,6 @@ local matRight = CreateMaterial("AnaglyphRightBlue", "UnlitGeneric", {
 })
 
 
-
-local eyeSeparationVMmm = 15 -- millimeters (63 is average for adults and in the range of 50-75)
-local eyeSeparationVM = eyeSeparationVMmm / 19.03
 
 hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
     if not pp_anaglyph_3d:GetBool() then return end
@@ -62,35 +60,33 @@ hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
         view.viewmodelfov = fov
     end
 
+
     -- Left eye (red)
     view.origin = origin - angles:Right() * (eyeSeparation * 0.5)
-    
-    -- angle turn 1 degree to the left
     view.angles = Angle(angles.p, angles.y - pp_anaglyph_3d_crosseyedness:GetFloat(), angles.r)
     render.PushRenderTarget(leftRT)
 
     render.RenderView(view)
     render.PopRenderTarget()
 
-    -- Right eye (blue)
 
+    -- Right eye (blue)
     view.origin = origin + angles:Right() * (eyeSeparation * 0.5)
-    -- angle turn 1 degree to the right
     view.angles = Angle(angles.p, angles.y + pp_anaglyph_3d_crosseyedness:GetFloat(), angles.r)
     render.PushRenderTarget(rightRT)
     
     render.RenderView(view)
     render.PopRenderTarget()
 
-    -- if not pp_anaglyph_3d:GetBool() then return end
 
-    matLeft:SetVector("$color", Vector(pp_anaglyph_3d_brightness:GetFloat(), 0, 0)) -- Only store red
-    matRight:SetVector("$color", Vector(0, pp_anaglyph_3d_brightness:GetFloat(), pp_anaglyph_3d_brightness:GetFloat())) -- Only store green and blue (cyan)
+    -- Render the left and right RTs to the screen
+    matLeft:SetVector("$color", Vector(pp_anaglyph_3d_brightness:GetFloat(), 0, 0))
+    matRight:SetVector("$color", Vector(0, pp_anaglyph_3d_brightness:GetFloat(), pp_anaglyph_3d_brightness:GetFloat()))
     cam.Start2D()
     
         render.OverrideBlend(true, BLEND_ONE, BLEND_ONE, BLENDFUNC_ADD)
         
-        surface.SetDrawColor(255,255,255,255)   -- full brightness, material handles channel mask
+        surface.SetDrawColor(255,255,255,255)
         
         surface.SetMaterial(matLeft)
         surface.DrawTexturedRect(0,0,ScrW(),ScrH())
@@ -155,5 +151,3 @@ list.Set( "PostProcess", "Anaglyph 3D", {
         form:ControlHelp("Change the viewmodel FOV for the anaglyph 3D effect. Use 0 for default. A higher FOV moves the viewmodel farther from the camera, enhancing the 3D effect. If the viewmodel is too close, the red and cyan images may be too far apart for your eyes to merge comfortably.")
     end
 })
-
-print("GUUSCONL POST PROCESS UPADTED")
