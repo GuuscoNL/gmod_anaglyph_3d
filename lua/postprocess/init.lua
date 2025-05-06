@@ -1,10 +1,9 @@
 --#TODO: Dubois algorithm to help against ghosting and color accuracy issues, but needs shader support...
 
 
-
 local pp_anaglyph_3d = CreateClientConVar("pp_anaglyph_3d", "0", false, false)
 local pp_anaglyph_3d_eye_separation = CreateClientConVar("pp_anaglyph_3d_eye_separation", "63", true, false, "millimeters (63 is average for adults and in the range of 50-75)", 0, 100)
-local pp_anaglyph_3d_no_draw_viewmodel = CreateClientConVar("pp_anaglyph_3d_no_draw_viewmodel", "1", true, false)
+local pp_anaglyph_3d_no_draw_viewmodel = CreateClientConVar("pp_anaglyph_3d_no_draw_viewmodel", "0", true, false)
 -- local pp_anaglyph_3d_draw_hud = CreateClientConVar("pp_anaglyph_3d_draw_hud", "1", true, false)
 local pp_anaglyph_3d_draw_monitors = CreateClientConVar("pp_anaglyph_3d_draw_monitors", "1", true, false)
 local pp_anaglyph_3d_use_postprocess = CreateClientConVar("pp_anaglyph_3d_use_postprocess", "1", true, false)
@@ -145,7 +144,7 @@ list.Set( "PostProcess", "Anaglyph 3D", {
         form:ControlHelp("This will use post-process effects to draw the anaglyph 3D effect.")
         
         form:CheckBox("No Viewmodel", "pp_anaglyph_3d_no_draw_viewmodel")
-        form:ControlHelp("This will draw the viewmodel in anaglyph 3D.")
+        form:ControlHelp("This will not draw the viewmodel in anaglyph 3D mode.")
 
         form:NumSlider("Viewmodel FOV", "pp_anaglyph_3d_fov", 0, 150, 0)
         form:ControlHelp("Change the viewmodel FOV for the anaglyph 3D effect. Use 0 for default. A higher FOV moves the viewmodel farther from the camera, enhancing the 3D effect. If the viewmodel is too close, the red and cyan images may be too far apart for your eyes to merge comfortably.")
