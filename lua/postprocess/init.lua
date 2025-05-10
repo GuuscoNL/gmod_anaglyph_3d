@@ -114,14 +114,36 @@ list.Set( "PostProcess", "Anaglyph 3D", {
 
     cpanel = function(cPanel)
         local form = vgui.Create("DForm", cPanel)
-        form:SetName("Anaglyph 3D")
+        form:SetName("Anaglyph 3D Settings")
+
+
+        local params = { Options = {}, CVars = {}, MenuButton = "1", Folder = "anaglyph_3D" }
+		params.Options[ "#preset.default" ] = {
+            pp_anaglyph_3d_eye_separation       = "63",
+            pp_anaglyph_3d_no_draw_viewmodel    = "0",
+            pp_anaglyph_3d_draw_monitors        = "1",
+            pp_anaglyph_3d_use_postprocess      = "1",
+            pp_anaglyph_3d_fov                  = "0",
+            pp_anaglyph_3d_crosshair            = "0",
+            pp_anaglyph_3d_crosseyedness        = "0.6",
+            pp_anaglyph_3d_brightness           = "1"
+		}
+
+        
+        cPanel:AddControl("label", {text = "Experience Garry's Mod in advanced 3D technology from the 80s!"})
+        cPanel:AddControl("ComboBox", params)
+
+        
+        cPanel:AddControl("CheckBox", {
+            Label = "Enable Anaglyph 3D",
+            command = "pp_anaglyph_3d"
+        })
+        cPanel:AddControl("Label", {
+            Text = "This will render the world in anaglyph 3D. Use red/cyan glasses to see the effect."
+        })
+
         cPanel:AddItem(form)
-
-        form:Help("Experience Garry's Mod in advanced 3D technology from the 80s!")
-
-        form:CheckBox("Enable Anaglyph 3D", "pp_anaglyph_3d")
-        form:ControlHelp("This will render the world in anaglyph 3D. Use red/cyan glasses to see the effect.")
-
+        
         form:NumSlider("Eye Separation (mm)", "pp_anaglyph_3d_eye_separation", 0, 100, 0)
         form:ControlHelp("This sets the eye separation in millimeters. Adults typically range from 50-75mm, with 63mm being average.  Try lowering it if the effect is too strong. Differs per person.")
 
