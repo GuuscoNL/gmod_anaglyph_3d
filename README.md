@@ -24,7 +24,7 @@ Find the effect here in-game:
 
 The effect comes with customizable settings:
 
-![Settings Screenshot](https://i.imgur.com/sW6Gdi8.png)
+![Settings Screenshot](https://i.imgur.com/xJToApw.png)
 
 ## Find a bug?
 
