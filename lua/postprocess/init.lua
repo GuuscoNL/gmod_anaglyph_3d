@@ -11,6 +11,7 @@ local pp_anaglyph_3d_fov = CreateClientConVar("pp_anaglyph_3d_fov", "0", true, f
 local pp_anaglyph_3d_crosshair = CreateClientConVar("pp_anaglyph_3d_crosshair", "0", true, false)
 local pp_anaglyph_3d_crosseyedness = CreateClientConVar("pp_anaglyph_3d_crosseyedness", "0.6", true, false, "Crosseyedness in degrees", 0, 5)
 local pp_anaglyph_3d_brightness = CreateClientConVar("pp_anaglyph_3d_brightness", "1", true, false, "Brightness of the anaglyph 3D effect. 0 = blackscreen, 1 = normal brightness, 2 = double brightness", 0, 10)
+local pp_anaglyph_3d_eye_position = CreateClientConVar("pp_anaglyph_3d_eye_position", "1", true, false, "Eye position: Left eye, middle, Right eye", 0, 2)
 
 
 -- Create RTs
@@ -60,9 +61,10 @@ hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
         view.viewmodelfov = fov
     end
 
+    local eyePosition = pp_anaglyph_3d_eye_position:GetInt()
 
     -- Left eye (red)
-    view.origin = origin - angles:Right() * (eyeSeparation * 0.5)
+    view.origin = origin - angles:Right() * ( (eyeSeparation * 0.5) * eyePosition )
     view.angles = Angle(angles.p, angles.y - pp_anaglyph_3d_crosseyedness:GetFloat(), angles.r)
     render.PushRenderTarget(leftRT)
     render.Clear(0, 0, 0, 255) -- Clear the render target to black
@@ -72,7 +74,7 @@ hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
 
     
     -- Right eye (blue)
-    view.origin = origin + angles:Right() * (eyeSeparation * 0.5)
+    view.origin = origin + angles:Right() *( (eyeSeparation * 0.5) * (2-eyePosition))
     view.angles = Angle(angles.p, angles.y + pp_anaglyph_3d_crosseyedness:GetFloat(), angles.r)
     render.PushRenderTarget(rightRT)
     render.Clear(0, 0, 0, 255) -- Clear the render target to black
@@ -133,11 +135,23 @@ list.Set( "PostProcess", "Anaglyph 3D", {
             pp_anaglyph_3d_fov                  = "0",
             pp_anaglyph_3d_crosshair            = "0",
             pp_anaglyph_3d_crosseyedness        = "0.6",
-            pp_anaglyph_3d_brightness           = "1"
+            pp_anaglyph_3d_brightness           = "1",
+            pp_anaglyph_3d_eye_position        = "1"
+		}
+        params.Options[ "First person shooter" ] = {
+            pp_anaglyph_3d_eye_separation       = "16",
+            pp_anaglyph_3d_no_draw_viewmodel    = "0",
+            pp_anaglyph_3d_draw_monitors        = "1",
+            pp_anaglyph_3d_use_postprocess      = "1",
+            pp_anaglyph_3d_fov                  = "0",
+            pp_anaglyph_3d_crosshair            = "0",
+            pp_anaglyph_3d_crosseyedness        = "0.6",
+            pp_anaglyph_3d_brightness           = "1",
+            pp_anaglyph_3d_eye_position        = "2"
 		}
 
         
-        cPanel:AddControl("label", {text = "Experience Garry's Mod in advanced 3D technology from the 80s!"})
+        cPanel:AddControl("label", {text = "Experience Garry's Mod in advanced 3D technology from the 80s!\nUse red/cyan glasses to see the effect.\n\nThere is a First Person Shooter preset available to look through iron sights and scopes for most SWEPS."})
         cPanel:AddControl("ComboBox", params)
 
         
@@ -162,7 +176,13 @@ list.Set( "PostProcess", "Anaglyph 3D", {
 
         form:NumSlider("Brightness", "pp_anaglyph_3d_brightness", 0, 10, 1)
         form:ControlHelp("This sets the brightness of the anaglyph 3D effect. Because some maps have a dark tint. 0 = blackscreen, 1 = normal brightness, 2 = double brightness.")
-        
+
+        local combobox = form:ComboBox("Eye Position", "pp_anaglyph_3d_eye_position")
+        combobox:AddChoice("Left Eye", 0)
+        combobox:AddChoice("Middle", 1)
+        combobox:AddChoice("Right Eye", 2)
+        form:ControlHelp("This sets the eye position for the anaglyph 3D effect. Left eye, middle, or right eye. This is useful for iron sights and scopes in SWEPS. If you select the Right Eye the weapons iron sight will be aligned with the right eye.")
+
         form:CheckBox("Draw Monitors", "pp_anaglyph_3d_draw_monitors")
         form:ControlHelp("This will draw monitors such as cameras and TVs while in anaglyph 3D.")
         
