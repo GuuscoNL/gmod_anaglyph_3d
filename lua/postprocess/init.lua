@@ -139,7 +139,7 @@ list.Set( "PostProcess", "Anaglyph 3D", {
             pp_anaglyph_3d_eye_position        = "1"
 		}
         params.Options[ "First person shooter" ] = {
-            pp_anaglyph_3d_eye_separation       = "16",
+            pp_anaglyph_3d_eye_separation       = "14",
             pp_anaglyph_3d_no_draw_viewmodel    = "0",
             pp_anaglyph_3d_draw_monitors        = "1",
             pp_anaglyph_3d_use_postprocess      = "1",
