@@ -24,14 +24,14 @@ local rightRT = GetRenderTarget(
 
 
 -- Create materials
-local matLeft = CreateMaterial("AnaglyphLeftRed", "UnlitGeneric", {
+local matRed = CreateMaterial("AnaglyphLeftRed", "UnlitGeneric", {
     ["$basetexture"]     = leftRT:GetName(),
     ["$translucent"]     = "1",
     ["$color"]           = "[1 0 0]" -- Only store red
 })
 
 -- Blue‑only version of right RT
-local matRight = CreateMaterial("AnaglyphRightBlue", "UnlitGeneric", {
+local matBlue = CreateMaterial("AnaglyphRightBlue", "UnlitGeneric", {
     ["$basetexture"]     = rightRT:GetName(),
     ["$translucent"]     = "1",
     ["$color"]           = "[0 1 1]" -- Only store green and blue (cyan)
@@ -53,6 +53,7 @@ hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
     view.dopostprocess = pp_anaglyph_3d_use_postprocess:GetBool()
     view.drawviewmodel = not pp_anaglyph_3d_no_draw_viewmodel:GetBool()
 
+
     if pp_anaglyph_3d_fov:GetFloat() > 0 then
         view.viewmodelfov = pp_anaglyph_3d_fov:GetFloat()
     else
@@ -64,34 +65,40 @@ hook.Add("RenderScene", "Anaglyph3D_Capture", function(origin, angles, fov)
     view.origin = origin - angles:Right() * (eyeSeparation * 0.5)
     view.angles = Angle(angles.p, angles.y - pp_anaglyph_3d_crosseyedness:GetFloat(), angles.r)
     render.PushRenderTarget(leftRT)
+    render.Clear(0, 0, 0, 255) -- Clear the render target to black
 
     render.RenderView(view)
     render.PopRenderTarget()
 
-
+    
     -- Right eye (blue)
     view.origin = origin + angles:Right() * (eyeSeparation * 0.5)
     view.angles = Angle(angles.p, angles.y + pp_anaglyph_3d_crosseyedness:GetFloat(), angles.r)
     render.PushRenderTarget(rightRT)
+    render.Clear(0, 0, 0, 255) -- Clear the render target to black
+    
+    local ply = LocalPlayer()
+
+    hook.Run("CalcView", ply, origin, angles, fov)
     
     render.RenderView(view)
     render.PopRenderTarget()
 
 
     -- Render the left and right RTs to the screen
-    matLeft:SetVector("$color", Vector(pp_anaglyph_3d_brightness:GetFloat(), 0, 0))
-    matRight:SetVector("$color", Vector(0, pp_anaglyph_3d_brightness:GetFloat(), pp_anaglyph_3d_brightness:GetFloat()))
+    matRed:SetVector("$color", Vector(pp_anaglyph_3d_brightness:GetFloat(), 0, 0))
+    matBlue:SetVector("$color", Vector(0, pp_anaglyph_3d_brightness:GetFloat(), pp_anaglyph_3d_brightness:GetFloat()))
     cam.Start2D()
     
         render.OverrideBlend(true, BLEND_ONE, BLEND_ONE, BLENDFUNC_ADD)
         
         surface.SetDrawColor(255,255,255,255)
         
-        surface.SetMaterial(matLeft)
-        surface.DrawTexturedRect(0,0,ScrW(),ScrH())
+        surface.SetMaterial(matRed)
+        surface.DrawTexturedRect(0, 0, ScrW(), ScrH())
         
-        surface.SetMaterial(matRight)
-        surface.DrawTexturedRect(0,0,ScrW(),ScrH())
+        surface.SetMaterial(matBlue)
+        surface.DrawTexturedRect(0, 0, ScrW(), ScrH())
         render.OverrideBlend(false)
 
     cam.End2D()
@@ -145,7 +152,7 @@ list.Set( "PostProcess", "Anaglyph 3D", {
         cPanel:AddItem(form)
         
         form:NumSlider("Eye Separation (mm)", "pp_anaglyph_3d_eye_separation", 0, 100, 0)
-        form:ControlHelp("This sets the eye separation in millimeters. Adults typically range from 50-75mm, with 63mm being average.  Try lowering it if the effect is too strong. Differs per person.")
+        form:ControlHelp("This sets the eye separation in millimeters. Adults typically range from 50-75mm, with 63mm being average. Try lowering it if the effect is too strong. Differs per person. \nNOTE: For weapon SWEPS you might want to lower this to like 12, otherwise the weapon images may be too far apart to merge comfortably.")
 
         form:NumSlider("Crosseyedness (degrees)", "pp_anaglyph_3d_crosseyedness", 0, 5, 2)
         form:ControlHelp("This sets the crosseyedness in degrees. This is the angle at which the eyes are turned inward to focus on an object, causing distant objects to look distant. A higher value will make the effect more pronounced, but may cause discomfort. Recommended to keep it between 0 and 1.5 degrees.")
